@@ -205,6 +205,7 @@ pub struct RowWriter<'a, W: Write> {
     // NOTE: (ab)used to track number of *rows* for a zero-column resultset
     col: usize,
 
+    wrote_row: bool,
     finished: bool,
 }
 
@@ -225,6 +226,7 @@ where
 
             col: 0,
 
+            wrote_row: false,
             finished: false,
         };
         rw.start()?;
@@ -322,6 +324,7 @@ where
         }
         self.result.as_mut().unwrap().writer.end_packet()?;
         self.col = 0;
+        self.wrote_row = true;
 
         Ok(())
     }
@@ -366,7 +369,9 @@ impl<'a, W: Write + 'a> RowWriter<'a, W> {
             });
         } else {
             // we wrote out at least one row
-            self.result.as_mut().unwrap().last_end = Some(Finalizer::EOF);
+            if self.wrote_row {
+                self.result.as_mut().unwrap().last_end = Some(Finalizer::EOF);
+            }
         }
         Ok(())
     }
